@@ -1,0 +1,50 @@
+{% extends 'base.html' %}{% from 'macros.html' import page_heading %}
+{% block title %}Video demo YOLO + Polygon{% endblock %}
+{% block crumb %}Video demo AI{% endblock %}
+{% block head %}<link rel="stylesheet" href="{{ url_for('static', filename='css/ai_demo.css') }}">{% endblock %}
+{% block content %}
+{{ page_heading(
+  'DEMO AI · DỮ LIỆU ĐÃ XỬ LÝ TRƯỚC',
+  'Video demo — Kết quả YOLO đã xử lý trước',
+  'Phát lại kết quả nhận diện và trạng thái 24 polygon D01–D24 theo đúng thời gian video.'
+) }}
+<div class="demo-ai-notice" role="note">
+  <strong>Chế độ trình diễn chỉ đọc.</strong>
+  Trang này chỉ phát lại kết quả demo đã xử lý, không cập nhật trạng thái nghiệp vụ trong SQL Server.
+</div>
+
+<div class="demo-ai-layout" data-demo-ai data-states-url="{{ url_for('api.api_ai_demo_states', v=demo_artifact_version) }}">
+  <section class="panel demo-video-panel" aria-labelledby="demo-video-heading">
+    <div class="demo-panel-heading">
+      <div><span class="demo-kicker">VIDEO 1920 × 1080</span><h2 id="demo-video-heading">YOLO + Polygon đã tiền xử lý</h2></div>
+      <button class="btn btn-soft" id="demo-restart" type="button">↺ Phát lại từ đầu</button>
+    </div>
+    <video id="demo-ai-video" class="demo-ai-video" controls preload="metadata" playsinline>
+      <source src="{{ url_for('web.ai_demo_video', v=demo_artifact_version) }}" type="video/mp4">
+      Trình duyệt không hỗ trợ phát video MP4.
+    </video>
+    <div class="demo-playback-meta" aria-live="polite">
+      <span>Thời gian <strong id="demo-current-time">00:00.00</strong> / <strong id="demo-duration">00:00.00</strong></span>
+      <span id="demo-sync-status">Đang nạp dữ liệu trạng thái…</span>
+    </div>
+  </section>
+
+  <aside class="panel demo-state-panel" aria-labelledby="demo-state-heading">
+    <div class="demo-panel-heading"><div><span class="demo-kicker">24 POLYGON ĐỘC LẬP</span><h2 id="demo-state-heading">Trạng thái tại thời điểm hiện tại</h2></div></div>
+    <div class="demo-counts" aria-label="Tổng hợp trạng thái">
+      <div class="demo-count occupied"><span>Có xe</span><strong id="demo-count-occupied">0</strong></div>
+      <div class="demo-count empty"><span>Trống</span><strong id="demo-count-empty">0</strong></div>
+      <div class="demo-count unknown"><span>Chưa rõ</span><strong id="demo-count-unknown">24</strong></div>
+    </div>
+    <div class="demo-slot-grid" id="demo-slot-grid">
+      {% for slot_id in slot_ids %}
+      <div class="demo-slot unknown" data-demo-slot="{{ slot_id }}" data-state="UNKNOWN">
+        <strong>{{ slot_id }}</strong><span>Chưa rõ</span>
+      </div>
+      {% endfor %}
+    </div>
+    <p class="demo-state-footnote">Đỏ: OCCUPIED · Xanh: EMPTY · Trắng: UNKNOWN. Tổng ba trạng thái luôn bằng 24.</p>
+  </aside>
+</div>
+{% endblock %}
+{% block scripts %}<script defer src="{{ url_for('static', filename='js/ai_demo.js') }}"></script>{% endblock %}

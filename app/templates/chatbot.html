@@ -1,0 +1,42 @@
+{% extends 'base.html' %}{% from 'macros.html' import page_heading %}
+{% block title %}AI Chatbot{% endblock %}
+{% block crumb %}AI Chatbot{% endblock %}
+{% block head %}<link rel="stylesheet" href="{{ url_for('static', filename='css/chatbot.css') }}">{% endblock %}
+{% block content %}
+{% set is_admin = current_user.role in ('ADMIN', 'MANAGER') %}
+{% set is_staff = current_user.role == 'STAFF' %}
+{{ page_heading(
+  'QUẢN TRỊ VIÊN · TRỢ LÝ DỮ LIỆU BÃI XE' if is_admin else ('NHÂN VIÊN VẬN HÀNH · HỖ TRỢ CA TRỰC' if is_staff else 'DỊCH VỤ KHÁCH HÀNG · HỖ TRỢ BÃI ĐỖ'),
+  'AI Chatbot',
+  'Hỏi đáp tự nhiên về tình trạng bãi xe; số liệu chỉ đọc từ ParkingAI và AI không tự tạo hoặc thực thi SQL.'
+) }}
+<div class="chatbot-layout" data-chatbot data-chatbot-url="{{ url_for('api.api_chatbot') }}" data-user-id="{{ current_user.id }}" data-username="{{ current_user.username }}" data-user-role="{{ current_user.role }}">
+  <section class="panel chatbot-panel">
+    <div class="chatbot-heading">
+      <div><h2>Lịch sử hội thoại</h2><p>Lưu trên trình duyệt tài khoản; không lưu vào SQL Server.</p></div>
+      <button type="button" class="btn btn-outline-secondary btn-sm" data-chatbot-clear title="Xóa lịch sử hội thoại của tài khoản này trên máy này">Xóa lịch sử</button>
+    </div>
+    <div class="chatbot-history" data-chatbot-history role="log" aria-live="polite"></div>
+    <div class="chatbot-loading" data-chatbot-loading hidden>
+      <span class="chatbot-spinner" aria-hidden="true"></span> Đang đọc dữ liệu ParkingAI…
+    </div>
+    <form class="chatbot-form" data-chatbot-form>
+      <label class="visually-hidden" for="chatbot-message">Câu hỏi</label>
+      <textarea id="chatbot-message" class="form-control" name="message" rows="2" maxlength="1000" required placeholder="{{ 'Hỏi về biểu phí, chỗ trống hoặc hướng dẫn gửi xe...' if current_user.role == 'CUSTOMER' else 'Hỏi Parking AI bất kỳ điều gì về tình trạng bãi xe...' }}"></textarea>
+      <button class="btn btn-primary" type="submit">Gửi</button>
+    </form>
+  </section>
+
+  <dialog class="chatbot-dialog" data-chatbot-clear-dialog>
+    <div class="chatbot-dialog-content">
+      <h3 class="chatbot-dialog-title">Xác nhận xóa lịch sử</h3>
+      <p class="chatbot-dialog-text">Bạn có chắc chắn muốn xóa toàn bộ lịch sử trò chuyện của tài khoản này không? Thao tác này không thể hoàn tác.</p>
+      <div class="chatbot-dialog-actions">
+        <button type="button" class="btn btn-outline-secondary btn-sm" data-chatbot-cancel>Hủy</button>
+        <button type="button" class="btn btn-danger btn-sm" data-chatbot-confirm>Xóa lịch sử</button>
+      </div>
+    </div>
+  </dialog>
+</div>
+{% endblock %}
+{% block scripts %}<script defer src="{{ url_for('static', filename='js/chatbot.js') }}"></script>{% endblock %}

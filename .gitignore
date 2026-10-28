@@ -1,0 +1,72 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+*.pytest_cache/
+.coverage
+htmlcov/
+*.egg-info/
+dist/
+build/
+
+# Environments & Secrets (CRITICAL)
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.pfx
+*.p12
+
+# Virtual Environments
+.venv/
+venv/
+env/
+ENV/
+
+# Database files & Backups
+*.bak
+*.db
+*.sqlite
+*.sqlite3
+backups/*
+!backups/.gitkeep
+instance/*
+!instance/.gitkeep
+
+# Logs
+*.log
+logs/
+
+# AI Model Checkpoints & Weights
+*.pt
+*.pth
+*.keras
+*.h5
+*.onnx
+*.engine
+*.tflite
+yolov8n.pt
+weights/*
+!weights/.gitkeep
+ai_models/*
+!ai_models/.gitkeep
+ai/results/*
+!ai/results/.gitkeep
+runs/
+
+# Large Datasets & Raw Media
+dataset/*
+!dataset/README.md
+!dataset/.gitkeep
+rag_storage/*
+!rag_storage/.gitkeep
+
+# OS & Editor generated files
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
+*.swp
+*.swo

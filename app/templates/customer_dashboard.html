@@ -1,0 +1,92 @@
+{% extends 'base.html' %}
+{% from 'macros.html' import page_heading %}
+{% block title %}Dịch vụ khách hàng{% endblock %}
+{% block crumb %}Khách hàng{% endblock %}
+
+{% block content %}
+<div class="heading-actions">
+  {{ page_heading('DỊCH VỤ KHÁCH HÀNG', 'Chào mừng, ' ~ current_user.full_name, 'Tra cứu tình trạng chỗ trống bãi đỗ, bảng giá niêm yết và hướng dẫn gửi xe.') }}
+  <div class="d-flex gap-2">
+    <a class="btn btn-primary" href="/chatbot">Trò chuyện với AI Chatbot ◆</a>
+  </div>
+</div>
+
+<div class="kpi-grid">
+  <div class="kpi">
+    <span>Chỗ trống hiện tại</span>
+    <strong class="green-text">{{ summary.empty }}<small> / {{ summary.capacity }}</small></strong>
+    <p>{{ summary.empty }} vị trí sẵn sàng đón xe</p>
+    <div class="kpi-bar">
+      {% set empty_pct = (summary.empty / summary.capacity * 100)|round|int if summary.capacity else 0 %}
+      <i style="width:{{ empty_pct }}%; background: var(--green, #22c55e);"></i>
+    </div>
+  </div>
+  <div class="kpi">
+    <span>Tỷ lệ còn trống</span>
+    <strong>{{ ((summary.empty / summary.capacity * 100)|round(1)) if summary.capacity else 0 }}%</strong>
+    <p>Tổng sức chứa {{ summary.capacity }} vị trí đỗ</p>
+  </div>
+  <div class="kpi">
+    <span>Vé lượt ban ngày</span>
+    <strong class="money-kpi">{{ rate.turn_fee|money if rate else '20.000 ₫' }}</strong>
+    <p>Áp dụng lượt gửi xe trong ngày</p>
+  </div>
+  <div class="kpi">
+    <span>Vé gửi qua đêm</span>
+    <strong class="money-kpi">{{ rate.night_fee|money if rate else '80.000 ₫' }}</strong>
+    <p>Áp dụng lưu xe qua đêm theo quy định</p>
+  </div>
+</div>
+
+<div class="dashboard-grid">
+  <section class="panel">
+    <div class="panel-heading">
+      <div>
+        <h2>Quy trình gửi xe dành cho khách hàng</h2>
+        <p>Các bước thuận tiện khi ra vào bãi đỗ ParkView</p>
+      </div>
+    </div>
+    <div class="customer-guide-steps p-3">
+      <div class="d-flex align-items-start gap-3 mb-3 p-3 rounded" style="background: rgba(255,255,255,0.03); border: 1px solid var(--border, #333);">
+        <span class="badge bg-primary fs-6 px-3 py-2">Bước 1</span>
+        <div>
+          <h5 class="mb-1 text-white">Vào cổng bãi đỗ</h5>
+          <p class="mb-0 text-secondary">Di chuyển xe vào làn kiểm soát, dừng trước camera nhận diện để hệ thống ghi nhận hình ảnh và nhận thẻ/vé từ nhân viên trực cổng.</p>
+        </div>
+      </div>
+      <div class="d-flex align-items-start gap-3 mb-3 p-3 rounded" style="background: rgba(255,255,255,0.03); border: 1px solid var(--border, #333);">
+        <span class="badge bg-primary fs-6 px-3 py-2">Bước 2</span>
+        <div>
+          <h5 class="mb-1 text-white">Đỗ xe đúng vị trí</h5>
+          <p class="mb-0 text-secondary">Đưa xe vào các ô đỗ còn trống theo biển chỉ dẫn hoặc hướng dẫn của nhân viên điều phối (khu vực D01–D24).</p>
+        </div>
+      </div>
+      <div class="d-flex align-items-start gap-3 p-3 rounded" style="background: rgba(255,255,255,0.03); border: 1px solid var(--border, #333);">
+        <span class="badge bg-primary fs-6 px-3 py-2">Bước 3</span>
+        <div>
+          <h5 class="mb-1 text-white">Thanh toán & Rời bãi</h5>
+          <p class="mb-0 text-secondary">Xuất trình thẻ/vé cho nhân viên tại cổng ra, thanh toán theo biểu phí niêm yết và di chuyển xe ra khỏi bãi an toàn.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <aside class="dashboard-aside">
+    <section class="panel ai-card">
+      <span class="ai-mark">◆</span>
+      <span class="eyebrow">TRỢ LÝ KHÁCH HÀNG</span>
+      <h2>Hỏi đáp AI<br>nhanh chóng.</h2>
+      <p>Bạn có thể hỏi AI về số lượng chỗ trống, biểu phí gửi xe hiện tại hoặc hướng dẫn quy trình gửi xe.</p>
+      <a href="/chatbot" class="btn btn-light w-100">Mở Chatbot hỗ trợ ↗</a>
+    </section>
+
+    <section class="panel quick-guide">
+      <h3>Lưu ý thẻ gửi xe</h3>
+      <div style="font-size: 0.9rem; color: var(--text-muted, #aaa); line-height: 1.6;">
+        <p class="mb-2">⚠️ <strong>Bảo quản thẻ/vé:</strong> Quý khách vui lòng giữ gìn thẻ gửi xe cẩn thận, không làm gãy hoặc mất thẻ.</p>
+        <p class="mb-0">ℹ️ <strong>Tra cứu cá nhân:</strong> Hệ thống hiện áp dụng thẻ/vé lượt trực tiếp tại cổng. Để đối chiếu hoặc xử lý sự cố, xin vui lòng liên hệ nhân viên quầy trực cổng.</p>
+      </div>
+    </section>
+  </aside>
+</div>
+{% endblock %}

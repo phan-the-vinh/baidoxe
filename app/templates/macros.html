@@ -1,0 +1,76 @@
+{% macro page_heading(eyebrow,title,subtitle) %}<div class="page-heading"><div class="eyebrow">{{ eyebrow }}</div><h1>{{ title }}</h1><p>{{ subtitle }}</p></div>{% endmacro %}
+{% macro field(label,name,type='text',value='',required=true,placeholder='') %}<div class="mb-3"><label class="form-label" for="{{ name }}">{{ label }}</label><input class="form-control" type="{{ type }}" name="{{ name }}" id="{{ name }}" value="{{ value }}" {% if required %}required{% endif %} placeholder="{{ placeholder }}" {% if type=='number' %}min="0" max="100000000" step="1"{% endif %}></div>{% endmacro %}
+{% macro check(name,label) %}<label class="check-row"><input type="checkbox" name="{{ name }}" required><span>{{ label }}</span></label>{% endmacro %}
+{% macro car() %}<svg viewBox="0 0 48 64" aria-hidden="true"><path d="M13 5h22c3 0 5 3 6 7l3 14v29c0 3-3 5-6 5H10c-3 0-6-2-6-5V26l3-14c1-4 3-7 6-7Z" fill="currentColor"/><path d="m13 15-3 12h28l-3-12H13Zm-2 30 2 8h22l2-8H11Z" fill="#f4faf8" opacity=".9"/><path d="M2 25h4m36 0h4" stroke="currentColor" stroke-width="4" stroke-linecap="round"/></svg>{% endmacro %}
+{% macro lot(areas,slots,active,interactive=false) %}
+<div class="parking-map" data-live-map><template class="car-template">{{ car() }}</template>
+{% for area in areas %}{% set area_slots = slots|selectattr('area_code','equalto',area.code)|list %}<div class="area-header"><h3>{{ area.name }}</h3><span data-area-count="{{ area.code }}">{{ area_slots|selectattr('state','equalto','EMPTY')|list|length }} / {{ area_slots|length }} ô trống</span></div><div class="slot-row">
+{% for s in area_slots %}<a data-slot-code="{{ s.code }}" class="slot {{ 'occupied' if s.state=='OCCUPIED' else 'empty' }} {{ 'review' if s.needs_review else '' }}" href="{{ '/visits/' ~ active[s.code].id if s.code in active else '/slots#confirm-' ~ s.code }}" title="{{ s.code }} · {{ 'Có xe' if s.state=='OCCUPIED' else 'Trống' }}{{ ' · Cần kiểm tra' if s.needs_review else '' }}"><span class="slot-code">{{ s.code }}</span><div class="slot-vehicle">{% if s.state=='OCCUPIED' %}{{ car() }}{% else %}<span class="slot-p">P</span>{% endif %}</div><span class="slot-status">{{ 'Kiểm tra' if s.needs_review else active[s.code].plate if s.code in active else 'Có xe' if s.state=='OCCUPIED' else 'Trống' }}</span></a>{% endfor %}
+</div>{% if not loop.last %}<div class="driveway"><span>→</span><span>LỐI DI CHUYỂN</span><span>→</span></div>{% endif %}{% endfor %}
+</div>{% endmacro %}
+{% macro visits_table(visits) %}<div class="table-responsive"><table class="table align-middle"><thead><tr><th>Biển số / Mã vé</th><th>Vị trí</th><th>Vào bãi</th><th>Hình thức</th><th>Trạng thái</th><th></th></tr></thead><tbody>{% for v in visits %}<tr><td><strong class="plate-text">{{ v.plate }}</strong><small class="table-sub">{{ v.ticket_code }}</small></td><td><span class="slot-chip">{{ v.slot_code }}</span></td><td>{{ v.entered_at|localdt }}</td><td>{{ 'Vé tháng' if v.ticket_type=='MONTH' else 'Vé lượt' }}</td><td><span class="status-pill {{ 'neutral' if v.exited_at else 'green' }}">{{ 'Đã ra' if v.exited_at else 'Đang gửi' }}</span></td><td><a href="/visits/{{ v.id }}" class="text-link">Chi tiết ↗</a></td></tr>{% else %}<tr><td colspan="6"><div class="empty-state">Chưa có lượt gửi phù hợp.</div></td></tr>{% endfor %}</tbody></table></div>{% endmacro %}
+{% macro legacy_ocr_widget(target) %}
+<div class="ocr-widget" data-target="{{ target }}">
+  <div class="d-flex justify-content-between align-items-center"><strong>Hỗ trợ đọc biển số</strong><span class="status-pill neutral">OCR</span></div>
+  <p class="text-muted small mt-2">Chọn chính ảnh xe cần xử lý. AI chỉ đề xuất; bạn phải sửa và xác nhận trước khi dùng.</p>
+  <input class="form-control ocr-file" type="file" accept="image/jpeg,image/png,image/webp">
+  <img class="ocr-source-preview" alt="Ảnh gốc đã chọn" hidden>
+  <div class="d-flex gap-2 mt-2 flex-wrap">
+    <button class="btn btn-soft ocr-read" type="button">Nhận diện biển số</button>
+    <button class="btn btn-outline-secondary ocr-camera" type="button">Mở camera</button>
+    <button class="btn btn-soft ocr-capture" type="button" hidden>Chụp & nhận diện</button>
+    <button class="btn btn-outline-secondary ocr-stop" type="button" hidden>Tắt camera</button>
+  </div>
+  <video class="ocr-video mt-2" autoplay muted playsinline hidden></video>
+  <section class="ocr-suggestion" hidden>
+    <small>AI đề xuất</small>
+    <strong class="ocr-proposed-plate"></strong>
+    <p class="ocr-raw-text"></p>
+    <img class="ocr-crop-preview" alt="Vùng biển số OpenCV phát hiện" hidden>
+    <label class="form-label" for="ocr-edit-{{ target }}">Ô chỉnh sửa biển số</label>
+    <input id="ocr-edit-{{ target }}" class="form-control ocr-edit" type="text" maxlength="16" autocomplete="off">
+    <button class="btn btn-primary ocr-confirm mt-2" type="button">Xác nhận biển số</button>
+  </section>
+  <p class="ocr-message small mt-2 mb-0" role="status">Luôn có thể nhập biển số thủ công.</p>
+</div>
+{% endmacro %}
+{% macro ocr_widget(target) %}
+<div class="plate-detection-widget" data-target="{{ target }}">
+  <div class="d-flex justify-content-between align-items-center">
+    <strong>Nhận diện biển số (AI & OCR)</strong><span class="status-pill green">YOLO + Tesseract</span>
+  </div>
+  <p class="text-muted small mt-2">Chọn ảnh hoặc mở camera để phát hiện xe, cắt biển số và đọc ký tự tự động.</p>
+  <input class="form-control plate-media-file" type="file" accept="image/jpeg,image/png,image/webp,video/mp4,video/webm,video/quicktime">
+  <div class="plate-media-stage mt-3" hidden>
+    <img class="plate-source-image" alt="Ảnh gốc đã chọn" hidden>
+    <video class="plate-source-video" controls muted playsinline hidden></video>
+  </div>
+  <div class="d-flex gap-2 mt-2 flex-wrap">
+    <button class="btn btn-soft plate-analyze" type="button">Phân tích ảnh/frame hiện tại</button>
+    <button class="btn btn-outline-secondary plate-camera" type="button">Mở camera</button>
+    <button class="btn btn-outline-secondary plate-stop" type="button" hidden>Tắt camera</button>
+  </div>
+  <p class="plate-message small mt-2 mb-0" role="status">Chưa có ảnh hoặc frame được phân tích.</p>
+  <section class="plate-detection-results mt-3" hidden>
+    <div class="plate-crop-grid"></div>
+    <div class="ocr-plate-card mt-3 p-3 border rounded bg-light" hidden>
+      <div class="d-flex justify-content-between align-items-center">
+        <div>
+          <small class="text-muted d-block">Kết quả OCR nhận diện:</small>
+          <strong class="ocr-recognized-badge fs-5 text-primary"></strong>
+        </div>
+        <span class="status-pill ocr-status-pill green">OCR</span>
+      </div>
+      <div class="mt-2">
+        <label class="form-label small mb-1" for="ocr-edit-{{ target }}">Biển số (kiểm tra và chỉnh sửa nếu cần):</label>
+        <input type="text" id="ocr-edit-{{ target }}" class="form-control ocr-plate-input" placeholder="Ví dụ: 30A-123.45">
+      </div>
+      <div class="d-flex gap-2 mt-3 flex-wrap">
+        <button type="button" class="btn btn-soft btn-sm ocr-apply-btn">Điền vào biểu mẫu</button>
+        <button type="button" class="btn btn-primary btn-sm ocr-lookup-btn">Tra cứu lượt gửi ⌕</button>
+      </div>
+      <div class="ocr-lookup-feedback mt-3" hidden></div>
+    </div>
+  </section>
+</div>
+{% endmacro %}

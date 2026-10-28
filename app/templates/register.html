@@ -1,0 +1,55 @@
+{% extends 'base.html' %}{% block title %}Đăng ký tài khoản khách hàng{% endblock %}
+{% block public %}<div class="login-shell"><section class="login-visual"><div class="brand"><span class="brand-icon">P<span>•</span></span><span>parking<span class="brand-ai">ai</span></span></div><div><div class="eyebrow">DÀNH CHO KHÁCH HÀNG</div><h1>Đăng ký tài khoản<br>khách hàng<br>tiện lợi.</h1><p>Theo dõi lịch sử gửi xe, thông tin vé và tra cứu vị trí nhanh chóng.</p></div><div class="login-lot">{% for n in range(1,7) %}<div class="login-space {{ 'filled' if n in [1,4,5] else '' }}">D0{{ n }}<span>{{ '▰' if n in [1,4,5] else 'P' }}</span></div>{% endfor %}</div><span class="login-foot">ParkView Customer Portal &nbsp; / &nbsp; Phân quyền ba vai trò</span></section><section class="login-form-section"><div class="login-card"><span class="status-pill blue">KHÁCH HÀNG</span><h2>Đăng ký tài khoản</h2><p class="text-muted">Tạo tài khoản để sử dụng dịch vụ bãi đỗ xe.</p><div id="reg-alert" class="alert d-none"></div><form id="register-form"><label class="form-label" for="full_name">Họ và tên</label><input name="full_name" id="full_name" autocomplete="name" class="form-control mb-3" required autofocus maxlength="120" placeholder="Nguyễn Văn A"><label class="form-label" for="username">Tên đăng nhập</label><input name="username" id="username" autocomplete="username" class="form-control mb-3" required maxlength="64" placeholder="user123"><label class="form-label" for="password">Mật khẩu (ít nhất 10 ký tự)</label><input name="password" id="password" type="password" autocomplete="new-password" class="form-control mb-3" required minlength="10" maxlength="128"><label class="form-label" for="confirm_password">Xác nhận mật khẩu</label><input name="confirm_password" id="confirm_password" type="password" autocomplete="new-password" class="form-control mb-4" required minlength="10" maxlength="128"><button type="submit" id="btn-submit" class="btn btn-primary w-100 btn-lg">Tạo tài khoản <span class="float-end">→</span></button><p class="small text-muted mt-4">Đã có tài khoản? <a href="/login" class="text-link">Đăng nhập ngay</a></p></form></div></section></div>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const form = document.getElementById('register-form');
+  const alertBox = document.getElementById('reg-alert');
+  const btn = document.getElementById('btn-submit');
+  if (!form) return;
+  form.addEventListener('submit', async function(e) {
+    e.preventDefault();
+    alertBox.className = 'alert d-none';
+    const fullName = form.full_name.value.trim();
+    const username = form.username.value.trim();
+    const password = form.password.value;
+    const confirmPassword = form.confirm_password.value;
+    if (password !== confirmPassword) {
+      alertBox.textContent = 'Mật khẩu xác nhận không khớp.';
+      alertBox.className = 'alert alert-danger';
+      return;
+    }
+    btn.disabled = true;
+    try {
+      const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
+      const res = await fetch('/api/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': csrfToken,
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({
+          full_name: fullName,
+          username: username,
+          password: password,
+          confirm_password: confirmPassword
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.message || data.error || 'Đăng ký không thành công.');
+      }
+      alertBox.textContent = (data.message || 'Đăng ký thành công!') + ' Đang chuyển đến trang đăng nhập...';
+      alertBox.className = 'alert alert-success';
+      setTimeout(() => {
+        window.location.href = data.redirect || '/login';
+      }, 1500);
+    } catch (err) {
+      alertBox.textContent = err.message;
+      alertBox.className = 'alert alert-danger';
+      btn.disabled = false;
+    }
+  });
+});
+</script>
+{% endblock %}

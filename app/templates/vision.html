@@ -1,0 +1,140 @@
+{% extends 'base.html' %}{% from 'macros.html' import page_heading %}
+{% block title %}AI nhận diện ô đỗ{% endblock %}
+{% block crumb %}Nhận diện ô đỗ{% endblock %}
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/ai_demo.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/vision_video.css') }}">
+{% endblock %}
+{% block content %}
+{{ page_heading(
+  'COMPUTER VISION · YOLO + POLYGON',
+  'Nhận diện trạng thái ô đỗ',
+  'Video gốc → YOLO inference → 24 Polygon → dữ liệu trạng thái → Canvas hiển thị trên web.'
+) }}
+<div class="alert {{ 'alert-success' if model_status.ready else 'alert-warning' }}">
+  {{ model_status.message }}
+</div>
+
+<section
+  class="panel form-panel vision-source-panel"
+  data-vision-video-workflow
+  data-ready="{{ 'true' if model_status.ready else 'false' }}"
+  data-legacy-ready="{{ 'true' if model_status.legacy_classifier.ready else 'false' }}"
+  data-job-status="{{ video_job.status if video_job else '' }}"
+  data-upload-url="{{ url_for('api.api_vision_video_create') }}"
+  data-status-url="{{ url_for('api.api_vision_video_status') }}"
+>
+  <div class="vision-source-heading">
+    <div><h2>Nguồn hình ảnh</h2><p>Video upload được giữ nguyên byte, chỉ dùng cho inference; không train, không render khung vào video và không ghi SQL Server.</p></div>
+    {% if video_job %}<span class="status-pill neutral" id="vision-job-id">Job {{ video_job.id[:8] }}</span>{% endif %}
+  </div>
+  <label class="form-label" for="parking-file">Ảnh hoặc video toàn bãi</label>
+  <input id="parking-file" class="form-control" type="file" accept="image/jpeg,image/png,image/webp,video/mp4,video/webm,video/quicktime">
+  <div class="d-flex flex-wrap gap-2 mt-3">
+    <button class="btn btn-primary" id="parking-analyze" type="button" {{ 'disabled' if not model_status.ready and not model_status.legacy_classifier.ready else '' }}>Phân tích bằng AI / nhận diện ảnh</button>
+    <button class="btn btn-soft" id="parking-camera" type="button" {{ 'disabled' if not model_status.legacy_classifier.ready else '' }}>Mở camera</button>
+    <button class="btn btn-outline-secondary" id="parking-stop" type="button">Dừng camera / video</button>
+  </div>
+  <label class="check-row mt-3">
+    <input type="checkbox" id="parking-auto" checked>
+    <span>Tự đồng bộ trạng thái theo video đang phát; tắt để cập nhật thủ công theo khung hình.</span>
+  </label>
+  <div class="vision-progress" id="vision-progress" {% if not video_job or video_job.status == 'complete' %}hidden{% endif %}>
+    <div><span id="vision-progress-label">Đang chuẩn bị xử lý…</span><strong id="vision-progress-value">0%</strong></div>
+    <progress id="vision-progress-bar" max="100" value="0"></progress>
+  </div>
+  <video id="parking-video" class="vision-preview" autoplay muted playsinline hidden></video>
+  <img id="parking-image" class="vision-preview" alt="Ảnh đầu vào bãi đỗ" hidden>
+  <div id="parking-message" class="inline-result mt-3" role="status" {% if not video_job %}hidden{% endif %}>
+    {% if video_job and video_job.status == 'complete' %}Phân tích hoàn thành. Video bên dưới là file gốc; Polygon được Canvas vẽ theo thời gian phát.{% elif video_job %}Đang phân tích video gốc; có thể giữ trang này mở để theo dõi tiến độ.{% endif %}
+  </div>
+</section>
+
+{% if video_job and video_job.status == 'complete' %}
+<div class="demo-ai-layout vision-result-layout mt-4" data-demo-ai data-states-url="{{ url_for('api.api_vision_video_states') }}" data-detections-url="{{ url_for('api.api_vision_video_detections') }}" data-vision-job-id="{{ video_job.id }}" data-has-compatible-polygons="{{ 'true' if has_compatible_polygons else 'false' }}">
+  <section class="panel demo-video-panel" aria-labelledby="vision-video-heading">
+    <div class="demo-panel-heading">
+      <div><span class="demo-kicker">VIDEO GỐC + WEB OVERLAY</span><h2 id="vision-video-heading">{% if has_compatible_polygons %}Kết quả phân tích YOLO + Polygon{% else %}Kết quả nhận diện xe YOLO{% endif %}</h2></div>
+      <div class="d-flex gap-2 flex-wrap justify-content-end">
+        <button class="btn btn-soft" data-demo-manual type="button">Cập nhật khung hình</button>
+        <button class="btn btn-soft" data-video-fullscreen type="button">⛶ Toàn màn hình</button>
+        <button class="btn btn-soft" id="demo-restart" type="button">↺ Phát lại từ đầu</button>
+      </div>
+    </div>
+    <div class="vision-video-overlay" data-video-overlay>
+      <video id="demo-ai-video" class="demo-ai-video" controls preload="metadata" playsinline>
+        <source src="{{ url_for('web.vision_video') }}">
+        Trình duyệt không hỗ trợ phát video nguồn.
+      </video>
+      <canvas id="parking-overlay-canvas" aria-label="Polygon trạng thái D01 đến D24"></canvas>
+    </div>
+    <div class="demo-playback-meta" aria-live="polite">
+      <span>Thời gian <strong id="demo-current-time">00:00.00</strong> / <strong id="demo-duration">00:00.00</strong></span>
+      <span id="demo-sync-status">Đang nạp dữ liệu nhận diện…</span>
+    </div>
+  </section>
+
+  <aside class="panel demo-state-panel" aria-labelledby="vision-state-heading">
+    <div class="demo-panel-heading">
+      <div>
+        <span class="demo-kicker">{% if has_compatible_polygons %}24 POLYGON ĐỘC LẬP{% else %}YOLO CAR DETECTION{% endif %}</span>
+        <h2 id="vision-state-heading">{% if has_compatible_polygons %}Trạng thái tại thời điểm hiện tại{% else %}Thông tin nhận diện xe{% endif %}</h2>
+      </div>
+    </div>
+    {% if has_compatible_polygons %}
+    <div class="demo-counts" aria-label="Tổng hợp trạng thái">
+      <div class="demo-count occupied"><span>Có xe</span><strong id="demo-count-occupied">0</strong></div>
+      <div class="demo-count empty"><span>Trống</span><strong id="demo-count-empty">0</strong></div>
+      <div class="demo-count unknown"><span>Chưa rõ</span><strong id="demo-count-unknown">24</strong></div>
+    </div>
+    <div class="demo-slot-grid" id="demo-slot-grid">
+      {% for slot_id in slot_ids %}
+      <div class="demo-slot unknown" data-demo-slot="{{ slot_id }}" data-state="UNKNOWN">
+        <strong>{{ slot_id }}</strong><span>Chưa rõ</span>
+      </div>
+      {% endfor %}
+    </div>
+    <p class="demo-state-footnote">Đỏ: OCCUPIED · Xanh: EMPTY · Trắng: UNKNOWN. Kết quả video độc lập, không cập nhật trạng thái nghiệp vụ trong SQL Server.</p>
+    {% else %}
+    <div class="alert alert-info mt-2">
+      <strong>Chưa gắn Polygon ô đỗ:</strong> Video này đang được hiển thị Bounding Box phát hiện xe theo thời gian thực. Do góc camera chưa có cấu hình ô đỗ (Polygon) tương thích, các ô D01–D24 được ẩn để tránh báo sai vị trí.
+    </div>
+    <div class="demo-counts mt-3" aria-label="Thông tin nhận diện">
+      <div class="demo-count" style="border-color: #00d2ff; background: rgba(0, 210, 255, 0.08);">
+        <span>Trạng thái</span><strong style="font-size: 1rem; color: #00d2ff;">Đang nhận diện</strong>
+      </div>
+    </div>
+    <p class="demo-state-footnote mt-3">Khung xanh / nhãn Car: Xe được YOLO phát hiện. Khi cấu hình Polygon cho góc camera này, hệ thống sẽ tự động xác định trạng thái ô đỗ.</p>
+    {% endif %}
+  </aside>
+</div>
+{% else %}
+<section class="panel vision-waiting mt-4">
+    <strong>Chưa có dữ liệu phân tích video.</strong>
+    <p>Chọn video gốc và bấm “Phân tích bằng AI”. Khi hoàn tất, video gốc, Canvas Polygon và bảng D01–D24 sẽ xuất hiện tại đây.</p>
+</section>
+{% endif %}
+
+<section class="panel form-panel mt-4" id="vision-image-result">
+  <h2>Kết quả ảnh / camera (CNN cũ)</h2>
+  <p class="form-hint">Luồng CNN ảnh/camera 20 ROI A/B cũ chỉ hoạt động với layout A01–B10. Trên layout D01–D24, chức năng ghi trạng thái bị khóa để tránh ánh xạ sai.</p>
+  <img id="parking-overlay" class="vision-preview" alt="Kết quả nhận diện ảnh kèm ROI" hidden>
+  <div id="parking-predictions"><div class="empty-state">Chưa có kết quả nhận diện ảnh hoặc camera.</div></div>
+</section>
+
+<section class="panel form-panel mt-4">
+  <h2>Thông tin mô hình video</h2>
+  <div class="model-status-grid">
+    <div><small>Kiến trúc</small><strong>YOLOv8n do nhóm huấn luyện</strong></div>
+    <div><small>Trọng số</small><strong>best.pt · lớp Car</strong></div>
+    <div><small>Hiển thị</small><strong>Video gốc · Canvas D01–D24 · X01</strong></div>
+  </div>
+  {% if not model_status.legacy_classifier.ready %}
+  <p class="text-muted mt-3 mb-0">CNN ảnh/20 ROI cũ chưa sẵn sàng: {{ model_status.legacy_classifier.message }}</p>
+  {% endif %}
+</section>
+{% endblock %}
+{% block scripts %}
+<script defer src="{{ url_for('static', filename='js/ai_demo.js') }}"></script>
+<script defer src="{{ url_for('static', filename='js/vision_video.js') }}"></script>
+{% endblock %}

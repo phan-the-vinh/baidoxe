@@ -1,0 +1,25 @@
+.chatbot-layout{max-width:1050px;margin:0 auto}
+.chatbot-panel{padding:24px}
+.chatbot-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:18px}
+.chatbot-heading h2{margin:0 0 5px}
+.chatbot-heading p{margin:0;color:#75878a;font-size:12px}
+.chatbot-history{height:min(55vh,520px);min-height:330px;overflow-y:auto;padding:18px;border:1px solid #dce8e4;border-radius:10px;background:#f8fbfa}
+.chatbot-empty{display:grid;place-items:center;height:100%;text-align:center;color:#81918f;font-size:12px}
+.chatbot-message{max-width:82%;margin-bottom:14px;padding:12px 14px;border-radius:12px}
+.chatbot-message small{display:block;margin-bottom:4px;font-weight:700;letter-spacing:.05em;text-transform:uppercase}
+.chatbot-message p{margin:0;white-space:pre-wrap;line-height:1.55}
+.chatbot-message.user{margin-left:auto;background:#287f69;color:#fff;border-bottom-right-radius:3px}
+.chatbot-message.assistant{background:#fff;border:1px solid #d9e6e2;color:#263c40;border-bottom-left-radius:3px}
+.chatbot-meta{display:block;margin-top:8px;color:#718481;font-size:10px}
+.chatbot-form{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;margin-top:14px;align-items:stretch}
+.chatbot-form textarea{resize:none}
+.chatbot-loading{margin:10px 0;color:#607673;font-size:12px}
+.chatbot-spinner{display:inline-block;width:11px;height:11px;margin-right:5px;border:2px solid #bbd8cf;border-top-color:#287f69;border-radius:50%;animation:chatbot-spin .7s linear infinite}
+@keyframes chatbot-spin{to{transform:rotate(360deg)}}
+.chatbot-dialog{border:none;border-radius:12px;padding:24px;max-width:440px;width:90%;box-shadow:0 16px 40px rgba(0,0,0,.18);background:#fff;margin:auto}
+.chatbot-dialog::backdrop{background:rgba(15,23,42,.5);backdrop-filter:blur(2px)}
+.chatbot-dialog-title{margin:0 0 10px;font-size:17px;font-weight:600;color:#1e293b}
+.chatbot-dialog-text{margin:0 0 20px;font-size:14px;color:#475569;line-height:1.55}
+.chatbot-dialog-actions{display:flex;justify-content:flex-end;gap:10px}
+@media(max-width:600px){.chatbot-panel{padding:18px}.chatbot-form{grid-template-columns:1fr}.chatbot-message{max-width:94%}}
+
