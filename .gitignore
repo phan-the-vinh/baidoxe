@@ -61,6 +61,12 @@ dataset/*
 !dataset/.gitkeep
 rag_storage/*
 !rag_storage/.gitkeep
+demo_videos/
+*.mp4
+*.avi
+*.mov
+*.m4v
+*.webm
 
 # OS & Editor generated files
 .DS_Store
